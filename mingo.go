@@ -5,7 +5,7 @@ import (
 	"math"
 
 	def "github.com/my0sot1s/godef/sdef"
-	"github.com/my0sot1s/tinker/utils"
+	logx "github.com/my0sot1s/godef/log"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -22,12 +22,12 @@ type DbConnector struct {
 func (c *DbConnector) InitMongo(url, dbname string) {
 	session, err := mgo.Dial(url)
 	if err != nil {
-		utils.ErrLog(err)
+		logx.ErrLog(err)
 		return
 	}
 	session.SetMode(mgo.Monotonic, true)
 	c.mgodb = session.DB(dbname)
-	utils.Log("+ DB CONNECTED DBNAME : ", dbname)
+	logx.Log("+ DB CONNECTED DBNAME : ", dbname)
 }
 
 func castRaw2Real(m def.M) def.M {
@@ -76,7 +76,7 @@ func (c *DbConnector) Insert(coll string, data def.M) (def.M, error) {
 	data["_id"] = bson.NewObjectId()
 	er := c.mgodb.C(coll).Insert(data)
 	if er != nil {
-		utils.ErrLog(er)
+		logx.ErrLog(er)
 		return nil, er
 	}
 	return data, nil
@@ -92,7 +92,7 @@ func (c *DbConnector) Update(coll string, selector def.M, updater def.M) (def.M,
 	// update
 	er := c.mgodb.C(coll).Update(selector, update)
 	if er != nil {
-		utils.ErrLog(er)
+		logx.ErrLog(er)
 		return nil, er
 	}
 	for k, v := range updater {
@@ -108,7 +108,7 @@ func (c *DbConnector) Delete(coll string, selector def.M) error {
 	}
 	er := c.mgodb.C(coll).Remove(selector)
 	if er != nil {
-		utils.ErrLog(er)
+		logx.ErrLog(er)
 		return er
 	}
 	return nil
