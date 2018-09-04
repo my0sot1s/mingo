@@ -41,7 +41,12 @@ func (c *DbConnector) readBy(coll, anchor, sortBy string, limit int, conditions 
 
 // Read read all by condition
 func (c *DbConnector) Read(coll, anchor, sortBy string, limit int, conditions def.M) ([]def.M, error) {
-	data, e := c.readBy(coll, anchor, sortBy, limit, conditions)
+	data, err := c.readBy(coll, anchor, sortBy, limit, conditions)
+	if err!=nil {
+		for _,v := range data {
+			v["id"] := v["_id"]
+		}
+	}
 	return data, e
 }
 
