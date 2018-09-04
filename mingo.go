@@ -42,25 +42,36 @@ func (c *DbConnector) Insert(coll string, data def.M) (def.M, error) {
 		logx.ErrLog(er)
 		return nil, er
 	}
+	data["id"] = data["_id"]
 	return data, nil
 }
 
 // Update single value
 func (c *DbConnector) Update(coll string, selector def.M, updater def.M) (def.M, error) {
+	if selector["_id"] == nil && selector["id"] != nil {
+		selector["_id"] = selector["id"]
+	}
 	if selector["_id"] == nil {
 		return nil, errors.New("selector nil _id")
 	}
+	delete(selector, "id")
+
+	delete(updater, "_id")
+	delete(updater, "id")
 	// set updater
 	update := def.M{"$set": updater}
 	// update
 	er := c.mgodb.C(coll).Update(selector, update)
+
 	if er != nil {
 		logx.ErrLog(er)
 		return nil, er
 	}
+
 	for k, v := range updater {
 		selector[k] = v
 	}
+
 	return updater, nil
 }
 
