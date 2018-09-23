@@ -2,6 +2,7 @@ package mingo
 
 import (
 	"errors"
+	"time"
 
 	logx "github.com/my0sot1s/godef/log"
 	def "github.com/my0sot1s/godef/sdef"
@@ -18,8 +19,15 @@ type DbConnector struct {
 }
 
 // InitMongo is initial a new connection
-func (c *DbConnector) InitMongo(url, dbname string) {
-	session, err := mgo.Dial(url)
+func (c *DbConnector) InitMongo(host, user, pw, dbname string) {
+	// session, err := mgo.Dial(url)
+	session, err := mgo.DialWithInfo(&mgo.DialInfo{
+		Addrs:    []string{host},
+		Timeout:  60 * time.Second,
+		Database: dbname,
+		Username: user,
+		Password: pw,
+	})
 	if err != nil {
 		logx.ErrLog(err)
 		return
