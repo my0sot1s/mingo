@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/my0sot1s/godef/convt"
 	logx "github.com/my0sot1s/godef/log"
 	def "github.com/my0sot1s/godef/sdef"
 	mgo "gopkg.in/mgo.v2"
@@ -44,13 +45,19 @@ func castRaw2Real(m def.M) def.M {
 
 // Insert insert Single
 func (c *DbConnector) Insert(coll string, data def.M) (def.M, error) {
-	data["_id"] = bson.NewObjectId()
-	er := c.mgodb.C(coll).Insert(data)
-	if er != nil {
-		logx.ErrLog(er)
-		return nil, er
+	newObjId := bson.NewObjectId()
+	data["_id"] = newObjId
+	err := c.mgodb.C(coll).Insert(data)
+	if err != nil {
+		logx.ErrLog(err)
+		return nil, err
 	}
-	data["id"] = data["_id"]
+
+	data, err = c.ReadByID(coll, newObjId.Hex())
+	if err != nil {
+		logx.ErrLog(err)
+		return nil, err
+	}
 	return data, nil
 }
 
@@ -63,21 +70,21 @@ func (c *DbConnector) Update(coll string, selector def.M, updater def.M) (def.M,
 		return nil, errors.New("selector nil _id")
 	}
 	delete(selector, "id")
-
 	delete(updater, "_id")
 	delete(updater, "id")
-	// set updater
-	update := def.M{"$set": updater}
+	pureID := convt.PIf2Str(selector["_id"])
+	selector["_id"] = bson.ObjectIdHex(pureID)
 	// update
-	er := c.mgodb.C(coll).Update(selector, update)
-
-	if er != nil {
-		logx.ErrLog(er)
-		return nil, er
+	err := c.mgodb.C(coll).Update(selector, def.M{"$set": updater})
+	if err != nil {
+		logx.ErrLog(err)
+		return nil, err
 	}
-
-	for k, v := range updater {
-		selector[k] = v
+	// check resuilt
+	updater, err = c.ReadByID(coll, pureID)
+	if err != nil {
+		logx.ErrLog(err)
+		return nil, err
 	}
 
 	return updater, nil
