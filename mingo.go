@@ -92,9 +92,14 @@ func (c *DbConnector) Update(coll string, selector def.M, updater def.M) (def.M,
 
 // Delete Single value
 func (c *DbConnector) Delete(coll string, selector def.M) error {
+	if selector["_id"] == nil && selector["id"] != nil {
+		selector["_id"] = selector["id"]
+	}
 	if selector["_id"] == nil {
 		return errors.New("selector nil _id")
 	}
+	delete(selector, "id")
+	selector["_id"] = bson.ObjectIdHex(convt.PIf2Str(selector["_id"]))
 	er := c.mgodb.C(coll).Remove(selector)
 	if er != nil {
 		logx.ErrLog(er)
