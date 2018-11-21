@@ -6,6 +6,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"github.com/my0sot1s/godef/convt"
+	logx "github.com/my0sot1s/godef/log"
 	def "github.com/my0sot1s/godef/sdef"
 )
 
@@ -54,7 +55,7 @@ func (c *DbConnector) Read(coll, anchor, sortBy string, limit int, conditions de
 func (c *DbConnector) ReadByID(coll, id string) (def.M, error) {
 	q := c.mgodb.C(coll)
 	if !bson.IsObjectIdHex(id) {
-		return nil, convt.CreateError("Is not obejct hex")
+		return nil, convt.CreateError("Is not object hex")
 	}
 	var result def.M
 	e := q.FindId(bson.ObjectIdHex(id)).One(&result)
@@ -62,5 +63,29 @@ func (c *DbConnector) ReadByID(coll, id string) (def.M, error) {
 		return nil, e
 	}
 	result["id"] = result["_id"]
+	return result, nil
+}
+
+//ReadByIDs get list items by ids
+func (c *DbConnector) ReadByIDs(coll string, ids []string) ([]def.M, error) {
+	// make condition
+	slideIds, cond, result := make([]bson.ObjectId, 0), make(def.M), make([]def.M, 0)
+	for _, id := range ids {
+		if !bson.IsObjectIdHex(id) {
+			return nil, convt.CreateError("Some Is not object hex")
+		}
+		slideIds = append(slideIds, bson.ObjectIdHex(id))
+	}
+	cond["_id"] = def.M{"$in": slideIds}
+	logx.Log(cond)
+	q := c.mgodb.C(coll).Find(cond)
+	if err := q.All(&result); err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		for _, r := range result {
+			r = castRaw2Real(r)
+		}
+	}
 	return result, nil
 }
