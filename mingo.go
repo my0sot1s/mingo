@@ -16,26 +16,46 @@ var oh = bson.ObjectIdHex
 
 //DbConnector wrap any connector to db
 type DbConnector struct {
-	mgodb *mgo.Database
+	mgodb  *mgo.Database
+	host   string
+	user   string
+	pw     string
+	dbname string
 }
 
 // InitMongo is initial a new connection
 func (c *DbConnector) InitMongo(host, user, pw, dbname string) {
 	// session, err := mgo.Dial(url)
+	c.host, c.user, c.pw, c.dbname = host, user, pw, dbname
+	c.retryConnect(3)
+	logx.Log("+ DB CONNECTED DBNAME : ", dbname)
+}
+
+func (c *DbConnector) retryConnect(num int) {
+retryLoop:
+	for i := 0; i < num; i++ {
+		err := c.connectShaker()
+		if err != nil {
+			continue
+		}
+		break retryLoop
+	}
+}
+func (c *DbConnector) connectShaker() error {
 	session, err := mgo.DialWithInfo(&mgo.DialInfo{
-		Addrs:    []string{host},
-		Timeout:  60 * time.Second,
-		Database: dbname,
-		Username: user,
-		Password: pw,
+		Addrs:    []string{c.host},
+		Timeout:  20 * time.Second,
+		Database: c.dbname,
+		Username: c.user,
+		Password: c.pw,
 	})
 	if err != nil {
 		logx.ErrLog(err)
-		return
+		return nil
 	}
 	session.SetMode(mgo.Monotonic, true)
-	c.mgodb = session.DB(dbname)
-	logx.Log("+ DB CONNECTED DBNAME : ", dbname)
+	c.mgodb = session.DB(c.dbname)
+	return nil
 }
 
 func castRaw2Real(m def.M) def.M {
