@@ -65,6 +65,8 @@ func castRaw2Real(m def.M) def.M {
 
 // Insert insert Single
 func (c *DbConnector) Insert(coll string, data def.M) (def.M, error) {
+	delete(data, "id")
+	delete(data, "_id")
 	newObjId := bson.NewObjectId()
 	data["_id"] = newObjId
 	err := c.mgodb.C(coll).Insert(data)
